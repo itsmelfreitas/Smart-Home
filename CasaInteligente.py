@@ -3,11 +3,36 @@ import pickle
 
 
 class ConexaoWiFi:
-    def conectar(self):
-        return "Conectado à rede Wi-Fi."
+    __ssid: str
+    __senha: str
+    __conectado: bool
+    
+    def __init__(self, ssid: str, senha: str):
+        self.__ssid = ssid
+        self.__senha = senha
+        self.__conectado = False
+
+    def get_ssid(self) -> str:
+        return self.__ssid
+
+    def is_conectado_wifi(self) -> bool:
+        return self.__conectado
         
-    def desconectar(self):
-        return "Desconectado da rede Wi-Fi."
+    def conectar(self, senha_digitada: str = "12345678") -> str:
+        if self.__conectado:
+            return f"Já está conectado à rede '{self.__ssid}'."
+        
+        if senha_digitada == self.__senha:
+            self.__conectado = True
+            return f"Conectado com sucesso à rede Wi-Fi '{self.__ssid}'!"
+        else:
+            raise Exception("Erro Wi-Fi: Senha incorreta!")
+
+    def desconectar(self) -> str:
+        if self.__conectado:
+            self.__conectado = False
+            return f"Desconectado da rede '{self.__ssid}'."
+        return "O dispositivo já está desconectado do Wi-Fi."
 
 
 class Dispositivo(ABC):
