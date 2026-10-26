@@ -100,12 +100,14 @@ class LampadaInteligente(Dispositivo, ConexaoWiFi):
         return f"LampadaInteligente({super().__repr__()}, cor='{self.__cor}')" 
 
 
-class ArCondicionado(Dispositivo):
+class ArCondicionado (Dispositivo, ConexaoWiFi):
     __temperatura: int
+    __temperatizador_min: int 
 
     def __init__(self, nome: str, temperatura_inicial: int = 24):
         super().__init__(nome)
         self.__temperatura = temperatura_inicial
+        self.__temperatizador_min = 0
 
     def ajustar_temperatura(self, temp: int):
         if not self.is_ligado():
@@ -114,6 +116,21 @@ class ArCondicionado(Dispositivo):
             raise Exception("Erro: Temperatura inválida! Escolha entre 16°C e 30°C.") 
         self.__temperatura = temp
 
+    def definir_temporizador(self, minutos: int) -> str:
+        if not self.is_ligado():
+            raise Exception("Erro: Não é possível programar o temporizador com o aparelho desligado!")
+        if minutos <= 0:
+            raise Exception("Erro: O tempo do temporizador deve ser maior que 0 minutos.")
+        self.__temperatizador_min = minutos
+        return f"Temporizador definido para {minutos} minutos."
+
+    def cancelar_temporizador(self) -> str:
+        if self.__temperatizador_min > 0:
+            self.__temperatizador_min = 0
+            return "Temporizador cancelado."
+        else:
+            return "Nenhum temporizador ativo para cancelar."
+        
     def testar_status(self):
         return f"O Ar Condicionado {self.get_nome()} está refrigerando a {self.__temperatura}°C."
 
