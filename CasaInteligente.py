@@ -1,7 +1,14 @@
 from abc import ABC, abstractmethod
 import pickle
 from typing import Dict, List, Tuple, Type
+from abc import ABCMeta, abstractmethod
 
+
+class ComandoVoz(metaclass=ABCMeta):
+    
+    @abstractmethod
+    def executar_comando(self, comando: str, id_disp: int, casa: 'CasaInteligente') -> str:
+        pass
 
 class ConexaoWiFi:
     __ssid: str
@@ -34,6 +41,34 @@ class ConexaoWiFi:
             self.__conectado = False
             return f"Desconectado da rede '{self.__ssid}'."
         return "O dispositivo já está desconectado do Wi-Fi."
+
+
+class AssistenteVirtual(ComandoVoz):
+    __nome: str
+    
+    def __init__(self, nome: str = "Alexa"):
+        self.__nome = nome
+        
+    def executar_comando(self, comando: str, id_disp: int, casa: 'CasaInteligente') -> str:
+        if not isinstance(comando, str):
+            raise TypeError("O comando deve ser um texto.")
+            
+        comando = comando.lower()
+        
+        try:
+            if "ligar" in comando:
+                casa.ligar_dispositivo(id_disp)
+                return f"{self.__nome}: Ok, liguei o dispositivo {id_disp}."
+            elif "desligar" in comando:
+                casa.desligar_dispositivo(id_disp)
+                return f"{self.__nome}: Ok, desliguei o dispositivo {id_disp}."
+            else:
+                return f"{self.__nome}: Desculpe, não entendi o comando."
+        except Exception as e:
+            return f"{self.__nome}: Não consegui executar. {str(e)}"
+            
+    def __str__(self):
+        return f"Assistente Virtual\nNome: {self.__nome}"
 
 
 class Dispositivo(ABC):
