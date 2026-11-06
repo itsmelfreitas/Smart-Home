@@ -183,12 +183,13 @@ class ArCondicionado(Dispositivo, ConexaoWiFi):
     def __repr__(self):
         return f"ArCondicionado({super().__repr__()}, temperatura={self.__temperatura})"
 
-class SensorPresenca(Dispositivo):
+class SensorPresenca(Dispositivo, ConexaoWiFi):
     __presenca_detectada: bool
 
-    def __init__(self, nome: str):
+    def __init__(self, nome: str, ssid: str = "Casa", senha: str = "12345678"):
         super().__init__(nome)
         self.__presenca_detectada = False
+        ConexaoWiFi.__init__(self, ssid, senha)
 
     def simular_deteccao(self, presenca: bool) -> str:
         if not self.is_ligado():
