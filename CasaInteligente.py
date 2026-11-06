@@ -1,20 +1,15 @@
 from abc import ABC, abstractmethod
 import pickle
 from typing import Dict, List, Tuple, Type
-from abc import ABCMeta, abstractmethod
 
 
-class ComandoVoz(metaclass=ABCMeta):
-    
+class ComandoVoz(ABC):
     @abstractmethod
     def executar_comando(self, comando: str, id_disp: int, casa: 'CasaInteligente') -> str:
         pass
 
-class ConexaoWiFi:
-    __ssid: str
-    __senha: str
-    __conectado: bool
 
+class ConexaoWiFi:
     def __init__(self, ssid: str, senha: str):
         self.__ssid = ssid
         self.__senha = senha
@@ -33,28 +28,27 @@ class ConexaoWiFi:
         if senha_digitada == self.__senha:
             self.__conectado = True
             return f"Conectado com sucesso à rede Wi-Fi '{self.__ssid}'!"
-        else:
-            raise Exception("Erro Wi-Fi: Senha incorreta!")
+
+        raise Exception("Erro Wi-Fi: Senha incorreta!")
 
     def desconectar(self) -> str:
         if self.__conectado:
             self.__conectado = False
             return f"Desconectado da rede '{self.__ssid}'."
+
         return "O dispositivo já está desconectado do Wi-Fi."
 
 
 class AssistenteVirtual(ComandoVoz):
-    __nome: str
-    
     def __init__(self, nome: str = "Alexa"):
         self.__nome = nome
-        
+
     def executar_comando(self, comando: str, id_disp: int, casa: 'CasaInteligente') -> str:
         if not isinstance(comando, str):
             raise TypeError("O comando deve ser um texto.")
-            
+
         comando = comando.lower()
-        
+
         try:
             if "ligar" in comando:
                 casa.ligar_dispositivo(id_disp)
@@ -62,19 +56,17 @@ class AssistenteVirtual(ComandoVoz):
             elif "desligar" in comando:
                 casa.desligar_dispositivo(id_disp)
                 return f"{self.__nome}: Ok, desliguei o dispositivo {id_disp}."
-            else:
-                return f"{self.__nome}: Desculpe, não entendi o comando."
+
+            return f"{self.__nome}: Desculpe, não entendi o comando."
+
         except Exception as e:
             return f"{self.__nome}: Não consegui executar. {str(e)}"
-            
+
     def __str__(self):
         return f"Assistente Virtual\nNome: {self.__nome}"
 
 
 class Dispositivo(ABC):
-    __nome: str
-    __ligado: bool
-
     def __init__(self, nome: str):
         self.__nome = nome
         self.__ligado = False
@@ -99,9 +91,7 @@ class Dispositivo(ABC):
 
     def __str__(self):
         status = "Ligado" if self.__ligado else "Desligado"
-        info = (f'Nome: {self.__nome}\n'
-                f'Status: {status}\n')
-        return info
+        return f"Nome: {self.__nome}\nStatus: {status}\n"
 
     def __repr__(self):
         return f"Dispositivo(nome='{self.__nome}', ligado={self.__ligado})"
@@ -112,11 +102,8 @@ class Dispositivo(ABC):
 
 
 class LampadaInteligente(Dispositivo, ConexaoWiFi):
-    __cor: str
-
     def __init__(self, nome: str, cor_inicial: str = "Branca",
                  ssid: str = "Casa", senha: str = "12345678"):
-        
         super().__init__(nome)
         self.__cor = cor_inicial
         ConexaoWiFi.__init__(self, ssid, senha)
@@ -131,61 +118,57 @@ class LampadaInteligente(Dispositivo, ConexaoWiFi):
         return f"A Lâmpada {self.get_nome()} está emitindo luz {self.__cor}."
 
     def __str__(self):
-        info = super().__str__()
-        info += f'Cor: {self.__cor}\n'
-        return info
+        return super().__str__() + f"Cor: {self.__cor}\n"
 
     def __repr__(self):
         return f"LampadaInteligente({super().__repr__()}, cor='{self.__cor}')"
 
 
 class ArCondicionado(Dispositivo, ConexaoWiFi):
-    __temperatura: int
-    __temperatizador_min: int
-
     def __init__(self, nome: str, temperatura_inicial: int = 24,
                  ssid: str = "Casa", senha: str = "12345678"):
         super().__init__(nome)
         self.__temperatura = temperatura_inicial
-        self.__temperatizador_min = 0
+        self.__temporizador_min = 0
         ConexaoWiFi.__init__(self, ssid, senha)
 
     def ajustar_temperatura(self, temp: int):
         if not self.is_ligado():
             raise Exception("Erro: Não é possível ajustar. O Ar Condicionado está desligado!")
-        if temp < 16 or temp > 30:
+
+        if not isinstance(temp, int) or isinstance(temp, bool) or temp < 16 or temp > 30:
             raise Exception("Erro: Temperatura inválida! Escolha entre 16°C e 30°C.")
+
         self.__temperatura = temp
 
     def definir_temporizador(self, minutos: int) -> str:
         if not self.is_ligado():
             raise Exception("Erro: Não é possível programar o temporizador com o aparelho desligado!")
+
         if minutos <= 0:
             raise Exception("Erro: O tempo do temporizador deve ser maior que 0 minutos.")
-        self.__temperatizador_min = minutos
+
+        self.__temporizador_min = minutos
         return f"Temporizador definido para {minutos} minutos."
 
     def cancelar_temporizador(self) -> str:
-        if self.__temperatizador_min > 0:
-            self.__temperatizador_min = 0
+        if self.__temporizador_min > 0:
+            self.__temporizador_min = 0
             return "Temporizador cancelado."
-        else:
-            return "Nenhum temporizador ativo para cancelar."
+
+        return "Nenhum temporizador ativo para cancelar."
 
     def testar_status(self) -> str:
         return f"O Ar Condicionado {self.get_nome()} está refrigerando a {self.__temperatura}°C."
 
     def __str__(self):
-        info = super().__str__()
-        info += f'Temperatura: {self.__temperatura}°C\n'
-        return info
+        return super().__str__() + f"Temperatura: {self.__temperatura}°C\n"
 
     def __repr__(self):
         return f"ArCondicionado({super().__repr__()}, temperatura={self.__temperatura})"
 
-class SensorPresenca(Dispositivo, ConexaoWiFi):
-    __presenca_detectada: bool
 
+class SensorPresenca(Dispositivo, ConexaoWiFi):
     def __init__(self, nome: str, ssid: str = "Casa", senha: str = "12345678"):
         super().__init__(nome)
         self.__presenca_detectada = False
@@ -194,12 +177,15 @@ class SensorPresenca(Dispositivo, ConexaoWiFi):
     def simular_deteccao(self, presenca: bool) -> str:
         if not self.is_ligado():
             raise Exception("Erro: O sensor de presença está desligado!")
+
         if not isinstance(presenca, bool):
             raise ValueError("A presença deve ser informada como True ou False.")
 
         self.__presenca_detectada = presenca
+
         if presenca:
             return f"Presença detectada pelo sensor '{self.get_nome()}'."
+
         return f"Nenhuma presença detectada pelo sensor '{self.get_nome()}'."
 
     def tem_presenca(self) -> bool:
@@ -208,14 +194,14 @@ class SensorPresenca(Dispositivo, ConexaoWiFi):
     def testar_status(self) -> str:
         if not self.is_ligado():
             return f"O sensor de presença {self.get_nome()} está desligado."
+
         if self.__presenca_detectada:
             return f"O sensor {self.get_nome()} detectou presença."
+
         return f"O sensor {self.get_nome()} não detectou presença."
 
 
 class SensorTemperatura(Dispositivo):
-    __temperatura: float
-
     def __init__(self, nome: str, temperatura_inicial: float = 22.0):
         super().__init__(nome)
         self.__temperatura = float(temperatura_inicial)
@@ -223,8 +209,10 @@ class SensorTemperatura(Dispositivo):
     def atualizar_temperatura(self, nova_temperatura: float):
         if not self.is_ligado():
             raise Exception("Erro: O sensor de temperatura está desligado!")
-        if not isinstance(nova_temperatura, (int, float)):
+
+        if not isinstance(nova_temperatura, (int, float)) or isinstance(nova_temperatura, bool):
             raise ValueError("A temperatura precisa ser um número.")
+
         self.__temperatura = float(nova_temperatura)
 
     def get_temperatura(self) -> float:
@@ -233,23 +221,23 @@ class SensorTemperatura(Dispositivo):
     def testar_status(self) -> str:
         if not self.is_ligado():
             return f"O sensor de temperatura {self.get_nome()} está desligado."
+
         return f"O sensor {self.get_nome()} está registrando {self.__temperatura:.1f}°C."
 
 
 class CasaInteligente:
-    __dispositivos: Dict[int, Dispositivo]
-    __nome_arquivo: str
-
     def __init__(self, nome_arquivo: str = 'dispositivos_casa.pkl'):
-        self.__dispositivos = {}
+        self.__dispositivos: Dict[int, Dispositivo] = {}
         self.__nome_arquivo = nome_arquivo
         self.carregar_estado()
 
     def adicionar_dispositivo(self, id_disp: int, dispositivo: Dispositivo):
         if not isinstance(id_disp, int) or isinstance(id_disp, bool) or id_disp <= 0:
             raise ValueError("O ID deve ser um número inteiro positivo.")
+
         if not isinstance(dispositivo, Dispositivo):
             raise TypeError("O objeto informado não é um dispositivo válido.")
+
         if id_disp in self.__dispositivos:
             raise ValueError(f"Já existe um dispositivo cadastrado com o ID {id_disp}.")
 
@@ -267,11 +255,14 @@ class CasaInteligente:
     def get_dispositivo(self, id_disp: int):
         if id_disp in self.__dispositivos:
             return self.__dispositivos[id_disp]
+
         raise Exception("Erro: Dispositivo não encontrado no sistema!")
 
     def listar_dispositivos(self) -> List[Tuple[int, Dispositivo]]:
-
         return list(self.__dispositivos.items())
+
+    def listar_ids_dispositivos(self) -> List[int]:
+        return list(self.__dispositivos.keys())
 
     def listar_por_estado(self, ligado: bool) -> List[Tuple[int, Dispositivo]]:
         return [
@@ -283,6 +274,7 @@ class CasaInteligente:
     def listar_por_tipo(self, tipo_dispositivo: Type[Dispositivo]) -> List[Tuple[int, Dispositivo]]:
         if not isinstance(tipo_dispositivo, type) or not issubclass(tipo_dispositivo, Dispositivo):
             raise TypeError("Informe uma classe válida derivada de Dispositivo.")
+
         return [
             (id_disp, disp)
             for id_disp, disp in self.__dispositivos.items()
@@ -308,22 +300,27 @@ class CasaInteligente:
 
     def simular_presenca(self, id_disp: int, presenca: bool) -> str:
         dispositivo = self.get_dispositivo(id_disp)
+
         if not isinstance(dispositivo, SensorPresenca):
             raise TypeError("O dispositivo informado não é um sensor de presença.")
+
         resultado = dispositivo.simular_deteccao(presenca)
         self.salvar_estado()
         return resultado
 
     def atualizar_sensor_temperatura(self, id_disp: int, temperatura: float):
         dispositivo = self.get_dispositivo(id_disp)
+
         if not isinstance(dispositivo, SensorTemperatura):
             raise TypeError("O dispositivo informado não é um sensor de temperatura.")
+
         dispositivo.atualizar_temperatura(temperatura)
         self.salvar_estado()
 
     def exibir_todos(self) -> str:
         if not self.__dispositivos:
             return "Nenhum dispositivo cadastrado."
+
         return "\n".join(
             f"--- ID {id_disp} ---\n{disp}{disp.testar_status()}"
             for id_disp, disp in self.__dispositivos.items()
@@ -337,8 +334,20 @@ class CasaInteligente:
         try:
             with open(self.__nome_arquivo, 'rb') as arquivo:
                 dados = pickle.load(arquivo)
+
                 if not isinstance(dados, dict):
                     raise ValueError("O arquivo salvo não contém um cadastro válido.")
+
+                if not all(
+                    isinstance(id_disp, int)
+                    and not isinstance(id_disp, bool)
+                    and id_disp > 0
+                    and isinstance(disp, Dispositivo)
+                    for id_disp, disp in dados.items()
+                ):
+                    raise ValueError("O cadastro contém dispositivos inválidos.")
+
                 self.__dispositivos = dados
+
         except FileNotFoundError:
             self.__dispositivos = {}
