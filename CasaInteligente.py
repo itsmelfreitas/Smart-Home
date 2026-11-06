@@ -107,7 +107,7 @@ class Dispositivo(ABC):
         return f"Dispositivo(nome='{self.__nome}', ligado={self.__ligado})"
 
     @abstractmethod
-    def testar_status(self):
+    def testar_status(self) -> str:
         pass
 
 
@@ -127,7 +127,7 @@ class LampadaInteligente(Dispositivo, ConexaoWiFi):
         else:
             raise Exception("Erro: Não é possível mudar a cor. A lâmpada está desligada!")
 
-    def testar_status(self):
+    def testar_status(self) -> str:
         return f"A Lâmpada {self.get_nome()} está emitindo luz {self.__cor}."
 
     def __str__(self):
@@ -172,7 +172,7 @@ class ArCondicionado(Dispositivo, ConexaoWiFi):
         else:
             return "Nenhum temporizador ativo para cancelar."
 
-    def testar_status(self):
+    def testar_status(self) -> str:
         return f"O Ar Condicionado {self.get_nome()} está refrigerando a {self.__temperatura}°C."
 
     def __str__(self):
@@ -205,7 +205,7 @@ class SensorPresenca(Dispositivo, ConexaoWiFi):
     def tem_presenca(self) -> bool:
         return self.__presenca_detectada
 
-    def testar_status(self):
+    def testar_status(self) -> str:
         if not self.is_ligado():
             return f"O sensor de presença {self.get_nome()} está desligado."
         if self.__presenca_detectada:
@@ -230,7 +230,7 @@ class SensorTemperatura(Dispositivo):
     def get_temperatura(self) -> float:
         return self.__temperatura
 
-    def testar_status(self):
+    def testar_status(self) -> str:
         if not self.is_ligado():
             return f"O sensor de temperatura {self.get_nome()} está desligado."
         return f"O sensor {self.get_nome()} está registrando {self.__temperatura:.1f}°C."
@@ -321,14 +321,13 @@ class CasaInteligente:
         dispositivo.atualizar_temperatura(temperatura)
         self.salvar_estado()
 
-    def exibir_todos(self):
+    def exibir_todos(self) -> str:
         if not self.__dispositivos:
-            print("Nenhum dispositivo cadastrado.")
-            return
-        for id_disp, disp in self.__dispositivos.items():
-            print(f"--- ID {id_disp} ---")
-            print(disp)
-            print(disp.testar_status())
+            return "Nenhum dispositivo cadastrado."
+        return "\n".join(
+            f"--- ID {id_disp} ---\n{disp}{disp.testar_status()}"
+            for id_disp, disp in self.__dispositivos.items()
+        )
 
     def salvar_estado(self):
         with open(self.__nome_arquivo, 'wb') as arquivo:

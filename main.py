@@ -5,11 +5,11 @@ from CasaInteligente import AssistenteVirtual
 
 
 class ConexaoWiFi:
-    def conectar(self):
-        print("Conectando à rede WiFi...")
+    def conectar(self) -> str:
+        return "Conectando à rede WiFi..."
 
-    def desconectar(self):
-        print("Desconectando da rede WiFi...")
+    def desconectar(self) -> str:
+        return "Desconectando da rede WiFi..."
 
 
 class Dispositivo(ABC):
@@ -48,7 +48,7 @@ class Dispositivo(ABC):
         return f"Dispositivo(nome='{self.__nome}', ligado={self.__ligado})"
 
     @abstractmethod
-    def testar_status(self):
+    def testar_status(self) -> str:
         pass
 
 class LampadaInteligente(Dispositivo, ConexaoWiFi):
@@ -64,7 +64,7 @@ class LampadaInteligente(Dispositivo, ConexaoWiFi):
         else:
             raise Exception("Erro: Não é possível mudar a cor. A lâmpada está desligada!")
 
-    def testar_status(self):
+    def testar_status(self) -> str:
         return f"A Lâmpada {self.get_nome()} está emitindo luz {self.__cor}."
 
     def __str__(self):
@@ -91,7 +91,7 @@ class ArCondicionado(Dispositivo):
                 "Erro: Temperatura inválida! Escolha entre 16°C e 30°C.")  # Exceção repassada a quem utiliza o objeto[cite: 7]
         self.__temperatura = temp
 
-    def testar_status(self):
+    def testar_status(self) -> str:
         return f"O Ar Condicionado {self.get_nome()} está refrigerando a {self.__temperatura}°C."
 
     def __str__(self):
@@ -121,10 +121,13 @@ class CasaInteligente:
         else:
             raise Exception("Erro: Dispositivo não encontrado no sistema!")
 
-    def exibir_todos(self):
-        for id_disp, disp in self.__dispositivos.items():
-            print(f"--- ID {id_disp} ---")
-            print(disp)
+    def exibir_todos(self) -> str:
+        if not self.__dispositivos:
+            return "Nenhum dispositivo cadastrado."
+        return "\n".join(
+            f"--- ID {id_disp} ---\n{disp}"
+            for id_disp, disp in self.__dispositivos.items()
+        )
 
     def salvar_estado(self):
         with open(self.__nome_arquivo, 'wb') as arquivo:
@@ -159,7 +162,7 @@ if __name__ == '__main__':
     print(assistente.executar_comando("desligar luz", 2, casa))
     
     print("\nStatus atualizado após comandos:")
-    casa.exibir_todos()
+    print(casa.exibir_todos())
     
     print("="*40 + "\n")
     print("✅ Sistema iniciado e pronto para receber comandos.")
