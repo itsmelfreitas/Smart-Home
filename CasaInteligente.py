@@ -114,9 +114,12 @@ class Dispositivo(ABC):
 class LampadaInteligente(Dispositivo, ConexaoWiFi):
     __cor: str
 
-    def __init__(self, nome: str, cor_inicial: str = "Branca"):
+    def __init__(self, nome: str, cor_inicial: str = "Branca",
+                 ssid: str = "Casa", senha: str = "12345678"):
+        
         super().__init__(nome)
         self.__cor = cor_inicial
+        ConexaoWiFi.__init__(self, ssid, senha)
 
     def mudar_cor(self, nova_cor: str):
         if self.is_ligado():
@@ -140,10 +143,12 @@ class ArCondicionado(Dispositivo, ConexaoWiFi):
     __temperatura: int
     __temperatizador_min: int
 
-    def __init__(self, nome: str, temperatura_inicial: int = 24):
+    def __init__(self, nome: str, temperatura_inicial: int = 24,
+                 ssid: str = "Casa", senha: str = "12345678"):
         super().__init__(nome)
         self.__temperatura = temperatura_inicial
         self.__temperatizador_min = 0
+        ConexaoWiFi.__init__(self, ssid, senha)
 
     def ajustar_temperatura(self, temp: int):
         if not self.is_ligado():
@@ -264,7 +269,7 @@ class CasaInteligente:
         raise Exception("Erro: Dispositivo não encontrado no sistema!")
 
     def listar_dispositivos(self) -> List[Tuple[int, Dispositivo]]:
-   
+
         return list(self.__dispositivos.items())
 
     def listar_por_estado(self, ligado: bool) -> List[Tuple[int, Dispositivo]]:
