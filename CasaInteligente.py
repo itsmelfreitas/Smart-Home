@@ -223,3 +223,54 @@ class CasaInteligente:
         if id_disp in self.__dispositivos:
             return self.__dispositivos[id_disp]
         raise Exception("Erro: Dispositivo não encontrado no sistema!")
+
+    def listar_dispositivos(self) -> List[Tuple[int, Dispositivo]]:
+        return list(self.__dispositivos.items())
+
+    def listar_ids_dispositivos(self) -> List[int]:
+        return list(self.__dispositivos.keys())
+
+    def ligar_dispositivo(self, id_disp: int):
+        self.get_dispositivo(id_disp).ligar()
+        self.salvar_estado()
+
+    def desligar_dispositivo(self, id_disp: int):
+        self.get_dispositivo(id_disp).desligar()
+        self.salvar_estado()
+
+    def simular_presenca(self, id_disp: int, presenca: bool) -> str:
+        dispositivo = self.get_dispositivo(id_disp)
+        if not isinstance(dispositivo, SensorPresenca):
+            raise TypeError("O dispositivo informado não é um sensor de presença.")
+        resultado = dispositivo.simular_deteccao(presenca)
+        self.salvar_estado()
+        return resultado
+
+    def atualizar_sensor_temperatura(self, id_disp: int, temperatura: float):
+        dispositivo = self.get_dispositivo(id_disp)
+        if not isinstance(dispositivo, SensorTemperatura):
+            raise TypeError("O dispositivo informado não é um sensor de temperatura.")
+        dispositivo.atualizar_temperatura(temperatura)
+        self.salvar_estado()
+
+    def exibir_todos(self) -> str:
+        if not self.__dispositivos:
+            return "Nenhum dispositivo cadastrado."
+        return "\n".join(
+            f"--- ID {id_disp} ---\n{disp}{disp.testar_status()}"
+            for id_disp, disp in self.__dispositivos.items()
+        )
+
+    def salvar_estado(self):
+        with open(self.__nome_arquivo, 'wb') as arquivo:
+            pickle.dump(self.__dispositivos, arquivo)
+
+    def carregar_estado(self):
+        try:
+            with open(self.__nome_arquivo, 'rb') as arquivo:
+                dados = pickle.load(arquivo)
+                if not isinstance(dados, dict):
+                    raise ValueError("O arquivo salvo não contém um cadastro válido.")
+                self.__dispositivos = dados
+        except FileNotFoundError:
+            self.__dispositivos = {}
