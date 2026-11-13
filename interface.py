@@ -1854,18 +1854,18 @@ def montar_interface():
     status_bar.pack(fill="x", side="bottom")
     renderizar_painel()
 
-    if MODO_MAC:
-        # Corrige o tamanho da área rolável após a janela aparecer na tela.
-        def ajustar_canvas_mac():
-            if not canvas_painel.winfo_exists():
-                return
-            canvas_painel.update_idletasks()
-            largura = max(canvas_painel.winfo_width(), 400)
-            canvas_painel.itemconfigure(janela_canvas, width=largura)
-            painel_scroll.update_idletasks()
-            canvas_painel.configure(scrollregion=canvas_painel.bbox("all"))
-            canvas_painel.yview_moveto(0)
-        janela.after(200, ajustar_canvas_mac)
+if MODO_MAC:
+    def ajustar_canvas_mac():
+        if not canvas_painel.winfo_exists():
+            return
+        canvas_painel.update_idletasks()
+        largura = max(canvas_painel.winfo_width(), 400)
+        canvas_painel.itemconfigure(janela_canvas, width=largura)
+        painel_scroll.update_idletasks()
+        canvas_painel.configure(scrollregion=canvas_painel.bbox("all"))
+        canvas_painel.yview_moveto(0)
+        
+    janela.after(200, ajustar_canvas_mac)
 
 
 reparar_wifi_antigo()
