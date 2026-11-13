@@ -220,4 +220,4 @@ class CasaInteligente:
         return dispositivo_removido
 
     def get_dispositivo(self, id_disp: int):
-        if id_disp in self.__
+        if id_disp in self.__dispositivos:
