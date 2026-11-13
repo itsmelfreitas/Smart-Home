@@ -39,7 +39,8 @@ def selecionar_dispositivo(casa, tipo=None):
     try:
         escolha = int(input("\nEscolha o dispositivo: "))
         if escolha == 0 or escolha < 1 or escolha > len(dispositivos):
-            if escolha != 0: print("Opção inválida!")
+            if escolha != 0: 
+                print("Opção inválida!")
             return None
         return dispositivos[escolha - 1][0]
     except ValueError:
@@ -81,47 +82,56 @@ def main():
                 print("\n📋 Dispositivos cadastrados:\n" + casa.exibir_todos())
 
             elif opcao == "3":
-                if (id_disp := selecionar_dispositivo(casa)):
+                id_disp = selecionar_dispositivo(casa)
+                if id_disp:
                     casa.ligar_dispositivo(id_disp)
                     print(f"\n{casa.get_dispositivo(id_disp).get_nome()} ligado com sucesso!")
 
             elif opcao == "4":
-                if (id_disp := selecionar_dispositivo(casa)):
+                id_disp = selecionar_dispositivo(casa)
+                if id_disp:
                     casa.desligar_dispositivo(id_disp)
                     print(f"\n{casa.get_dispositivo(id_disp).get_nome()} desligado com sucesso!")
 
             elif opcao == "5":
-                if (id_disp := selecionar_dispositivo(casa, ArCondicionado)):
+                id_disp = selecionar_dispositivo(casa, ArCondicionado)
+                if id_disp:
                     casa.get_dispositivo(id_disp).ajustar_temperatura(int(input("Nova temperatura (16-30°C): ")))
                     casa.salvar_estado()
                     print("Temperatura ajustada.")
 
             elif opcao == "6":
-                if (id_disp := selecionar_dispositivo(casa, LampadaInteligente)):
+                id_disp = selecionar_dispositivo(casa, LampadaInteligente)
+                if id_disp:
                     casa.get_dispositivo(id_disp).mudar_cor(input("Nova cor da lâmpada: "))
                     casa.salvar_estado()
                     print("Cor alterada.")
 
             elif opcao == "7":
-                if (id_disp := selecionar_dispositivo(casa, SensorPresenca)):
+                id_disp = selecionar_dispositivo(casa, SensorPresenca)
+                if id_disp:
                     resposta = input("Presença detectada? (s/n): ").strip().lower()
                     if resposta in ("s", "n"):
                         print(casa.simular_presenca(id_disp, resposta == "s"))
 
             elif opcao == "8":
-                if (id_disp := selecionar_dispositivo(casa, SensorTemperatura)):
+                id_disp = selecionar_dispositivo(casa, SensorTemperatura)
+                if id_disp:
                     casa.atualizar_sensor_temperatura(id_disp, float(input("Nova temperatura: ")))
                     print("Temperatura atualizada.")
 
             elif opcao == "9":
-                if (id_asst := selecionar_dispositivo(casa, AssistenteVirtual)):
+                id_asst = selecionar_dispositivo(casa, AssistenteVirtual)
+                if id_asst:
                     comando = input("Digite o comando (ex: 'ligar', 'desligar'): ")
                     print("\nQual dispositivo deseja controlar?")
-                    if (id_alvo := selecionar_dispositivo(casa)):
+                    id_alvo = selecionar_dispositivo(casa)
+                    if id_alvo:
                         print(casa.get_dispositivo(id_asst).executar_comando(comando, id_alvo, casa))
 
             elif opcao == "10":
-                if (id_disp := selecionar_dispositivo(casa)):
+                id_disp = selecionar_dispositivo(casa)
+                if id_disp:
                     disp = casa.get_dispositivo(id_disp)
                     print(f"\nDetalhes do dispositivo:\n{disp}{disp.testar_status()}")
 
@@ -132,7 +142,9 @@ def main():
                 print("Opção inválida! Tente novamente.")
 
         except Exception as e:
-            print(f"Erro na operação: {e}")
+            # Formatação corrigida para evitar a repetição da palavra "Erro" 
+            mensagem = str(e).replace("Erro: ", "")
+            print(f"⚠️ Ação não permitida: {mensagem}")
 
-if __name__ == "__main__":
+if __name__ == '__main__': #[cite: 16]
     main()
