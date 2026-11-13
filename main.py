@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 import pickle
 
+from CasaInteligente import AssistenteVirtual
+
 
 class ConexaoWiFi:
     def conectar(self):
@@ -134,3 +136,30 @@ class CasaInteligente:
                 self.__dispositivos = pickle.load(arquivo)
         except FileNotFoundError:
             self.__dispositivos = {}
+
+if __name__ == '__main__':
+    casa = CasaInteligente()
+    assistente = AssistenteVirtual("Jarvis")
+    
+    print("\n" + "="*40)
+    print("📋 RELATÓRIO DE INICIALIZAÇÃO DO SISTEMA")
+    print("="*40)
+    print(assistente)
+    print("-" * 40)
+    
+    try:
+        casa.carregar_estado()
+        casa.get_dispositivo(1)
+    except Exception:
+        casa.adicionar_dispositivo(1, ArCondicionado("Ar da Sala", 22))
+        casa.adicionar_dispositivo(2, LampadaInteligente("Luz do Quarto", "Branca"))
+        
+    print("🎙️ Teste de Comando de Voz:")
+    print(assistente.executar_comando("ligar", 1, casa)) 
+    print(assistente.executar_comando("desligar luz", 2, casa))
+    
+    print("\nStatus atualizado após comandos:")
+    casa.exibir_todos()
+    
+    print("="*40 + "\n")
+    print("✅ Sistema iniciado e pronto para receber comandos.")
