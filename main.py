@@ -1,15 +1,7 @@
-from abc import ABC, abstractmethod
-import pickle
-
 from CasaInteligente import (
-    CasaInteligente,
-    AssistenteVirtual,
-    LampadaInteligente,
-    ArCondicionado,
-    SensorPresenca,
-    SensorTemperatura,
+    CasaInteligente, AssistenteVirtual, LampadaInteligente,
+    ArCondicionado, SensorPresenca, SensorTemperatura
 )
-
 
 def exibir_menu():
     print("\n" + "=" * 40)
@@ -23,20 +15,15 @@ def exibir_menu():
     print("6. Mudar cor (Lâmpada Inteligente)")
     print("7. Simular presença (Sensor de Presença)")
     print("8. Atualizar temperatura (Sensor de Temperatura)")
-    print("9. Exibir detalhes de um dispositivo")
+    print("9. Usar Assistente Virtual (Comando de Voz)")
+    print("10. Exibir detalhes de um dispositivo")
     print("0. Sair")
     print("=" * 40)
 
-
 def selecionar_dispositivo(casa, tipo=None):
     dispositivos = casa.listar_dispositivos()
-
     if tipo is not None:
-        dispositivos = [
-            (id_disp, disp)
-            for id_disp, disp in dispositivos
-            if isinstance(disp, tipo)
-        ]
+        dispositivos = [(id_disp, disp) for id_disp, disp in dispositivos if isinstance(disp, tipo)]
 
     if not dispositivos:
         print("\nNenhum dispositivo compatível encontrado.")
@@ -44,27 +31,17 @@ def selecionar_dispositivo(casa, tipo=None):
 
     print("\n📋 Selecione um dispositivo:")
     print("-" * 40)
-
-    for indice, (id_disp, dispositivo) in enumerate(dispositivos, start=1):
-        nome = dispositivo.get_nome().title()
-        estado = "Ligado" if dispositivo.is_ligado() else "Desligado"
-    
-        print(f"{indice}. {nome} | {estado}")
-
+    for indice, (id_disp, disp) in enumerate(dispositivos, start=1):
+        estado = "Ligado" if disp.is_ligado() else "Desligado"
+        print(f"{indice}. {disp.get_nome().title()} | {estado}")
     print("0. Voltar")
 
     try:
         escolha = int(input("\nEscolha o dispositivo: "))
-
-        if escolha == 0:
+        if escolha == 0 or escolha < 1 or escolha > len(dispositivos):
+            if escolha != 0: print("Opção inválida!")
             return None
-
-        if escolha < 1 or escolha > len(dispositivos):
-            print("Opção inválida!")
-            return None
-
         return dispositivos[escolha - 1][0]
-
     except ValueError:
         print("Digite uma opção numérica válida!")
         return None
@@ -72,190 +49,90 @@ def selecionar_dispositivo(casa, tipo=None):
 
 def main():
     casa = CasaInteligente()
-    assistente = AssistenteVirtual("Jarvis")
 
     while True:
         exibir_menu()
-        opcao = input("Selecione uma opção: ")
+        opcao = input("Selecione uma opção: ").strip()
 
-        if opcao == "1":
-            try:
-                ids = casa.listar_ids_dispositivos()
-
-                id_disp = max(ids, default=0) + 1
-
-                tipo = input(
-                    "Digite o tipo (lampada, ar, presenca, temperatura): "
-                ).strip().lower()
-
+        try:
+            if opcao == "1":
+                id_disp = max(casa.listar_ids_dispositivos(), default=0) + 1
+                tipo = input("Digite o tipo (lampada, ar, presenca, temperatura, assistente): ").strip().lower()
                 nome = input("Digite o nome do dispositivo: ")
 
                 if tipo == "lampada":
-                    cor = input("Digite a cor inicial da lâmpada: ")
-                    dispositivo = LampadaInteligente(nome, cor)
-
+                    disp = LampadaInteligente(nome, input("Digite a cor inicial: "))
                 elif tipo == "ar":
-                    temperatura = int(
-                        input("Digite a temperatura inicial do ar condicionado: ")
-                    )
-                    dispositivo = ArCondicionado(nome, temperatura)
-
+                    disp = ArCondicionado(nome, int(input("Digite a temperatura inicial: ")))
                 elif tipo == "presenca":
-                    dispositivo = SensorPresenca(nome)
-
+                    disp = SensorPresenca(nome)
                 elif tipo == "temperatura":
-                    temp_inicial = float(
-                        input("Digite a temperatura inicial do sensor: ")
-                    )
-                    dispositivo = SensorTemperatura(nome, temp_inicial)
-
+                    disp = SensorTemperatura(nome, float(input("Digite a temperatura inicial: ")))
+                elif tipo == "assistente":
+                    disp = AssistenteVirtual(nome)
                 else:
                     print("Tipo inválido!")
                     continue
 
-                casa.adicionar_dispositivo(id_disp, dispositivo)
+                casa.adicionar_dispositivo(id_disp, disp)
+                print(f"\nDispositivo '{nome}' adicionado com sucesso! (ID interno: {id_disp})")
 
-                print(
-                    f"\nDispositivo '{nome}' adicionado com sucesso!"
-                )
-                print(f"ID interno: {id_disp}")
+            elif opcao == "2":
+                print("\n📋 Dispositivos cadastrados:\n" + casa.exibir_todos())
 
-            except Exception as e:
-                print(f"Erro ao adicionar dispositivo: {e}")
-
-        elif opcao == "2":
-            print("\n📋 Dispositivos cadastrados:")
-            print(casa.exibir_todos())
-
-        elif opcao == "3":
-            id_disp = selecionar_dispositivo(casa)
-
-            if id_disp is not None:
-                try:
+            elif opcao == "3":
+                if (id_disp := selecionar_dispositivo(casa)):
                     casa.ligar_dispositivo(id_disp)
-                    dispositivo = casa.get_dispositivo(id_disp)
-                    print(
-                        f"\n{dispositivo.get_nome()} ligado com sucesso!"
-                    )
-                except Exception as e:
-                    print(f"Erro: {e}")
+                    print(f"\n{casa.get_dispositivo(id_disp).get_nome()} ligado com sucesso!")
 
-        elif opcao == "4":
-            id_disp = selecionar_dispositivo(casa)
-
-            if id_disp is not None:
-                try:
+            elif opcao == "4":
+                if (id_disp := selecionar_dispositivo(casa)):
                     casa.desligar_dispositivo(id_disp)
-                    dispositivo = casa.get_dispositivo(id_disp)
-                    print(
-                        f"\n{dispositivo.get_nome()} desligado com sucesso!"
-                    )
-                except Exception as e:
-                    print(f"Erro: {e}")
+                    print(f"\n{casa.get_dispositivo(id_disp).get_nome()} desligado com sucesso!")
 
-        elif opcao == "5":
-            id_disp = selecionar_dispositivo(casa, ArCondicionado)
-
-            if id_disp is not None:
-                try:
-                    nova_temp = int(
-                        input("Digite a nova temperatura (16-30°C): ")
-                    )
-
-                    dispositivo = casa.get_dispositivo(id_disp)
-                    dispositivo.ajustar_temperatura(nova_temp)
+            elif opcao == "5":
+                if (id_disp := selecionar_dispositivo(casa, ArCondicionado)):
+                    casa.get_dispositivo(id_disp).ajustar_temperatura(int(input("Nova temperatura (16-30°C): ")))
                     casa.salvar_estado()
+                    print("Temperatura ajustada.")
 
-                    print(
-                        f"Temperatura ajustada para {nova_temp}°C."
-                    )
-
-                except Exception as e:
-                    print(f"Erro: {e}")
-
-        elif opcao == "6":
-            id_disp = selecionar_dispositivo(casa, LampadaInteligente)
-
-            if id_disp is not None:
-                try:
-                    nova_cor = input("Digite a nova cor da lâmpada: ")
-
-                    dispositivo = casa.get_dispositivo(id_disp)
-                    dispositivo.mudar_cor(nova_cor)
+            elif opcao == "6":
+                if (id_disp := selecionar_dispositivo(casa, LampadaInteligente)):
+                    casa.get_dispositivo(id_disp).mudar_cor(input("Nova cor da lâmpada: "))
                     casa.salvar_estado()
+                    print("Cor alterada.")
 
-                    print(
-                        f"Cor da lâmpada alterada para {nova_cor}."
-                    )
+            elif opcao == "7":
+                if (id_disp := selecionar_dispositivo(casa, SensorPresenca)):
+                    resposta = input("Presença detectada? (s/n): ").strip().lower()
+                    if resposta in ("s", "n"):
+                        print(casa.simular_presenca(id_disp, resposta == "s"))
 
-                except Exception as e:
-                    print(f"Erro: {e}")
+            elif opcao == "8":
+                if (id_disp := selecionar_dispositivo(casa, SensorTemperatura)):
+                    casa.atualizar_sensor_temperatura(id_disp, float(input("Nova temperatura: ")))
+                    print("Temperatura atualizada.")
 
-        elif opcao == "7":
-            id_disp = selecionar_dispositivo(casa, SensorPresenca)
+            elif opcao == "9":
+                if (id_asst := selecionar_dispositivo(casa, AssistenteVirtual)):
+                    comando = input("Digite o comando (ex: 'ligar', 'desligar'): ")
+                    print("\nQual dispositivo deseja controlar?")
+                    if (id_alvo := selecionar_dispositivo(casa)):
+                        print(casa.get_dispositivo(id_asst).executar_comando(comando, id_alvo, casa))
 
-            if id_disp is not None:
-                try:
-                    resposta = input(
-                        "Presença detectada? (s/n): "
-                    ).strip().lower()
+            elif opcao == "10":
+                if (id_disp := selecionar_dispositivo(casa)):
+                    disp = casa.get_dispositivo(id_disp)
+                    print(f"\nDetalhes do dispositivo:\n{disp}{disp.testar_status()}")
 
-                    if resposta not in ("s", "n"):
-                        print("Resposta inválida! Digite s ou n.")
-                        continue
+            elif opcao == "0":
+                print("Encerrando o sistema. Até logo!")
+                break
+            else:
+                print("Opção inválida! Tente novamente.")
 
-                    presenca = resposta == "s"
-
-                    resultado = casa.simular_presenca(
-                        id_disp, presenca
-                    )
-
-                    print(resultado)
-
-                except Exception as e:
-                    print(f"Erro: {e}")
-
-        elif opcao == "8":
-            id_disp = selecionar_dispositivo(casa, SensorTemperatura)
-
-            if id_disp is not None:
-                try:
-                    nova_temp = float(
-                        input("Digite a nova temperatura: ")
-                    )
-
-                    casa.atualizar_sensor_temperatura(
-                        id_disp, nova_temp
-                    )
-
-                    print(
-                        f"Temperatura do sensor atualizada para {nova_temp}°C."
-                    )
-
-                except Exception as e:
-                    print(f"Erro: {e}")
-
-        elif opcao == "9":
-            id_disp = selecionar_dispositivo(casa)
-
-            if id_disp is not None:
-                try:
-                    dispositivo = casa.get_dispositivo(id_disp)
-
-                    print("\nDetalhes do dispositivo:")
-                    print(dispositivo)
-                    print(dispositivo.testar_status())
-
-                except Exception as e:
-                    print(f"Erro: {e}")
-
-        elif opcao == "0":
-            print("Encerrando o sistema. Até logo!")
-            break
-
-        else:
-            print("Opção inválida! Tente novamente.")
-
+        except Exception as e:
+            print(f"Erro na operação: {e}")
 
 if __name__ == "__main__":
     main()
