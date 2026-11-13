@@ -1,6 +1,3 @@
-Here is the complete, fully cleaned-up version of `interface.py` with all the Mac compatibility fixes and non-breaking spaces removed so it won't throw any indentation errors:
-
-```python
 import os
 import json
 import queue
