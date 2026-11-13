@@ -1,143 +1,54 @@
-from abc import ABC, abstractmethod
-import pickle
+from CasaInteligente import (
+    CasaInteligente, AssistenteVirtual, LampadaInteligente,
+    ArCondicionado, SensorPresenca, SensorTemperatura
+)
 
-from CasaInteligente import AssistenteVirtual
+def exibir_menu():
+    print("\n" + "=" * 40)
+    print("🏠 CASA INTELIGENTE - MENU INTERATIVO")
+    print("=" * 40)
+    print("1. Adicionar dispositivo")
+    print("2. Listar dispositivos")
+    print("3. Ligar dispositivo")
+    print("4. Desligar dispositivo")
+    print("5. Ajustar temperatura (Ar Condicionado)")
+    print("6. Mudar cor (Lâmpada Inteligente)")
+    print("7. Simular presença (Sensor de Presença)")
+    print("8. Atualizar temperatura (Sensor de Temperatura)")
+    print("9. Usar Assistente Virtual (Comando de Voz)")
+    print("10. Exibir detalhes de um dispositivo")
+    print("0. Sair")
+    print("=" * 40)
 
+def selecionar_dispositivo(casa, tipo=None):
+    dispositivos = casa.listar_dispositivos()
+    if tipo is not None:
+        dispositivos = [(id_disp, disp) for id_disp, disp in dispositivos if isinstance(disp, tipo)]
 
-class ConexaoWiFi:
-    def conectar(self):
-        print("Conectando à rede WiFi...")
+    if not dispositivos:
+        print("\nNenhum dispositivo compatível encontrado.")
+        return None
 
-    def desconectar(self):
-        print("Desconectando da rede WiFi...")
+    print("\n📋 Selecione um dispositivo:")
+    print("-" * 40)
+    for indice, (id_disp, disp) in enumerate(dispositivos, start=1):
+        estado = "Ligado" if disp.is_ligado() else "Desligado"
+        print(f"{indice}. {disp.get_nome().title()} | {estado}")
+    print("0. Voltar")
 
-
-class Dispositivo(ABC):
-    __nome: str
-    __ligado: bool
-
-    def __init__(self, nome: str):
-        self.__nome = nome
-        self.__ligado = False
-
-    def get_nome(self) -> str:
-        return self.__nome
-
-    def is_ligado(self) -> bool:
-        return self.__ligado
-
-    def ligar(self):
-        if not self.__ligado:
-            self.__ligado = True
-        else:
-            raise Exception(f"Erro: {self.__nome} já está ligado.")
-
-    def desligar(self):
-        if self.__ligado:
-            self.__ligado = False
-        else:
-            raise Exception(f"Erro: {self.__nome} já está desligado.")
-
-    def __str__(self):
-        status = "Ligado" if self.__ligado else "Desligado"
-        info = (f'Nome: {self.__nome}\n'
-                f'Status: {status}\n')
-        return info
-
-    def __repr__(self):
-        return f"Dispositivo(nome='{self.__nome}', ligado={self.__ligado})"
-
-    @abstractmethod
-    def testar_status(self):
-        pass
-
-class LampadaInteligente(Dispositivo, ConexaoWiFi):
-    __cor: str
-
-    def __init__(self, nome: str, cor_inicial: str = "Branca"):
-        super().__init__(nome)
-        self.__cor = cor_inicial
-
-    def mudar_cor(self, nova_cor: str):
-        if self.is_ligado():
-            self.__cor = nova_cor
-        else:
-            raise Exception("Erro: Não é possível mudar a cor. A lâmpada está desligada!")
-
-    def testar_status(self):
-        return f"A Lâmpada {self.get_nome()} está emitindo luz {self.__cor}."
-
-    def __str__(self):
-        info = super().__str__()
-        info += f'Cor: {self.__cor}\n'
-        return info
-
-    def __repr__(self):
-        return f"LampadaInteligente({super().__repr__()}, cor='{self.__cor}')"  # [cite: 1]
+    try:
+        escolha = int(input("\nEscolha o dispositivo: "))
+        if escolha == 0 or escolha < 1 or escolha > len(dispositivos):
+            if escolha != 0: 
+                print("Opção inválida!")
+            return None
+        return dispositivos[escolha - 1][0]
+    except ValueError:
+        print("Digite uma opção numérica válida!")
+        return None
 
 
-class ArCondicionado(Dispositivo):
-    __temperatura: int
-
-    def __init__(self, nome: str, temperatura_inicial: int = 24):
-        super().__init__(nome)
-        self.__temperatura = temperatura_inicial
-
-    def ajustar_temperatura(self, temp: int):
-        if not self.is_ligado():
-            raise Exception("Erro: Não é possível ajustar. O Ar Condicionado está desligado!")
-        if temp < 16 or temp > 30:
-            raise Exception(
-                "Erro: Temperatura inválida! Escolha entre 16°C e 30°C.")  # Exceção repassada a quem utiliza o objeto[cite: 7]
-        self.__temperatura = temp
-
-    def testar_status(self):
-        return f"O Ar Condicionado {self.get_nome()} está refrigerando a {self.__temperatura}°C."
-
-    def __str__(self):
-        info = super().__str__()
-        info += f'Temperatura: {self.__temperatura}°C\n'
-        return info
-
-    def __repr__(self):
-        return f"ArCondicionado({super().__repr__()}, temperatura={self.__temperatura})"
-
-
-class CasaInteligente:
-    __dispositivos: dict
-    __nome_arquivo: str
-
-    def __init__(self):
-        self.__dispositivos = {}
-        self.__nome_arquivo = 'dispositivos_casa.pkl'
-
-    def adicionar_dispositivo(self, id_disp: int, dispositivo: Dispositivo):
-        self.__dispositivos[id_disp] = dispositivo
-        self.salvar_estado()
-
-    def get_dispositivo(self, id_disp: int):
-        if id_disp in self.__dispositivos:
-            return self.__dispositivos[id_disp]
-        else:
-            raise Exception("Erro: Dispositivo não encontrado no sistema!")
-
-    def exibir_todos(self):
-        for id_disp, disp in self.__dispositivos.items():
-            print(f"--- ID {id_disp} ---")
-            print(disp)
-
-    def salvar_estado(self):
-        with open(self.__nome_arquivo, 'wb') as arquivo:
-            pickle.dump(self.__dispositivos, arquivo)
-
-    def carregar_estado(self):
-        try:
-            with open(self.__nome_arquivo, 'rb') as arquivo:
-                self.__dispositivos = pickle.load(arquivo)
-        except FileNotFoundError:
-            self.__dispositivos = {}
-
-if __name__ == '__main__':
+def main():
     casa = CasaInteligente()
     assistente = AssistenteVirtual("Jarvis")
     
@@ -159,7 +70,104 @@ if __name__ == '__main__':
     print(assistente.executar_comando("desligar luz", 2, casa))
     
     print("\nStatus atualizado após comandos:")
-    casa.exibir_todos()
+    print(casa.exibir_todos())
     
     print("="*40 + "\n")
     print("✅ Sistema iniciado e pronto para receber comandos.")
+
+    while True:
+        exibir_menu()
+        opcao = input("Selecione uma opção: ").strip()
+
+        try:
+            if opcao == "1":
+                id_disp = max(casa.listar_ids_dispositivos(), default=0) + 1
+                tipo = input("Digite o tipo (lampada, ar, presenca, temperatura, assistente): ").strip().lower()
+                nome = input("Digite o nome do dispositivo: ")
+
+                if tipo == "lampada":
+                    disp = LampadaInteligente(nome, input("Digite a cor inicial: "))
+                elif tipo == "ar":
+                    disp = ArCondicionado(nome, int(input("Digite a temperatura inicial: ")))
+                elif tipo == "presenca":
+                    disp = SensorPresenca(nome)
+                elif tipo == "temperatura":
+                    disp = SensorTemperatura(nome, float(input("Digite a temperatura inicial: ")))
+                elif tipo == "assistente":
+                    disp = AssistenteVirtual(nome)
+                else:
+                    print("Tipo inválido!")
+                    continue
+
+                casa.adicionar_dispositivo(id_disp, disp)
+                print(f"\nDispositivo '{nome}' adicionado com sucesso! (ID interno: {id_disp})")
+
+            elif opcao == "2":
+                print("\n📋 Dispositivos cadastrados:\n" + casa.exibir_todos())
+
+            elif opcao == "3":
+                id_disp = selecionar_dispositivo(casa)
+                if id_disp:
+                    casa.ligar_dispositivo(id_disp)
+                    print(f"\n{casa.get_dispositivo(id_disp).get_nome()} ligado com sucesso!")
+
+            elif opcao == "4":
+                id_disp = selecionar_dispositivo(casa)
+                if id_disp:
+                    casa.desligar_dispositivo(id_disp)
+                    print(f"\n{casa.get_dispositivo(id_disp).get_nome()} desligado com sucesso!")
+
+            elif opcao == "5":
+                id_disp = selecionar_dispositivo(casa, ArCondicionado)
+                if id_disp:
+                    casa.get_dispositivo(id_disp).ajustar_temperatura(int(input("Nova temperatura (16-30°C): ")))
+                    casa.salvar_estado()
+                    print("Temperatura ajustada.")
+
+            elif opcao == "6":
+                id_disp = selecionar_dispositivo(casa, LampadaInteligente)
+                if id_disp:
+                    casa.get_dispositivo(id_disp).mudar_cor(input("Nova cor da lâmpada: "))
+                    casa.salvar_estado()
+                    print("Cor alterada.")
+
+            elif opcao == "7":
+                id_disp = selecionar_dispositivo(casa, SensorPresenca)
+                if id_disp:
+                    resposta = input("Presença detectada? (s/n): ").strip().lower()
+                    if resposta in ("s", "n"):
+                        print(casa.simular_presenca(id_disp, resposta == "s"))
+
+            elif opcao == "8":
+                id_disp = selecionar_dispositivo(casa, SensorTemperatura)
+                if id_disp:
+                    casa.atualizar_sensor_temperatura(id_disp, float(input("Nova temperatura: ")))
+                    print("Temperatura atualizada.")
+
+            elif opcao == "9":
+                id_asst = selecionar_dispositivo(casa, AssistenteVirtual)
+                if id_asst:
+                    comando = input("Digite o comando (ex: 'ligar', 'desligar'): ")
+                    print("\nQual dispositivo deseja controlar?")
+                    id_alvo = selecionar_dispositivo(casa)
+                    if id_alvo:
+                        print(casa.get_dispositivo(id_asst).executar_comando(comando, id_alvo, casa))
+
+            elif opcao == "10":
+                id_disp = selecionar_dispositivo(casa)
+                if id_disp:
+                    disp = casa.get_dispositivo(id_disp)
+                    print(f"\nDetalhes do dispositivo:\n{disp}{disp.testar_status()}")
+
+            elif opcao == "0":
+                print("Encerrando o sistema. Até logo!")
+                break
+            else:
+                print("Opção inválida! Tente novamente.")
+
+        except Exception as e:
+            mensagem = str(e).replace("Erro: ", "")
+            print(f"⚠️ Ação não permitida: {mensagem}")
+
+if __name__ == '__main__':
+    main()
