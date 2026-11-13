@@ -4,6 +4,7 @@ import queue
 import re
 import sys
 import threading
+import traceback
 import unicodedata
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
@@ -29,11 +30,42 @@ except ImportError:
     sr = None
 
 
+# --------------- Compatibilidade visual com Tkinter no macOS -----------
+MODO_MAC = sys.platform == "darwin"
+FONTE_INTERFACE = "Helvetica" if MODO_MAC else "Segoe UI"
+FONTE_SIMBOLOS = "Helvetica" if MODO_MAC else "Segoe UI Symbol"
+
 casa = CasaInteligente()
 janela = tk.Tk()
 janela.title("Casa Inteligente")
-janela.geometry("1260x820")
-janela.minsize(1010, 690)
+if MODO_MAC:
+    largura_tela = janela.winfo_screenwidth()
+    altura_tela = janela.winfo_screenheight()
+    largura_janela = min(1260, max(760, largura_tela - 75))
+    altura_janela = min(820, max(560, altura_tela - 130))
+    janela.geometry(f"{largura_janela}x{altura_janela}")
+    janela.minsize(min(800, largura_janela), min(540, altura_janela))
+else:
+    janela.geometry("1260x820")
+    janela.minsize(1010, 690)
+
+# --------------- Diagnóstico de exceções em callbacks no macOS -----------
+def registrar_erro_interface(tipo, erro, rastreio):
+    detalhes = "".join(traceback.format_exception(tipo, erro, rastreio))
+    print(detalhes, file=sys.stderr)
+    if MODO_MAC:
+        try:
+            caminho_erro = os.path.join(os.path.dirname(os.path.abspath(__file__)), "erro_interface_mac.txt")
+            with open(caminho_erro, "a", encoding="utf-8") as arquivo:
+                arquivo.write(f"\n{datetime.now().isoformat(timespec='seconds')}\n{detalhes}\n")
+        except OSError:
+            pass
+        try:
+            messagebox.showerror("Erro na interface", f"Ocorreu um erro ao abrir ou atualizar a tela:\n{erro}\n\nVeja erro_interface_mac.txt.", parent=janela)
+        except tk.TclError:
+            pass
+
+janela.report_callback_exception = registrar_erro_interface
 
 tema_atual = "escuro"
 HISTORICO_ARQUIVO = "historico_atividades.txt"
@@ -182,8 +214,8 @@ def selecionar_comodo_dialogo(titulo, atual="Sem Cômodo"):
     dialogo.resizable(False, False)
     dialogo.transient(janela)
     dialogo.grab_set()
-    tk.Label(dialogo, text="Onde está o dispositivo?", font=("Segoe UI", 15, "bold"), bg=cor("superficie"), fg=cor("texto")).pack(anchor="w", padx=25, pady=(23, 7))
-    tk.Label(dialogo, text="Escolha um cômodo ou digite outro nome.", font=("Segoe UI", 10), bg=cor("superficie"), fg=cor("texto_fraco")).pack(anchor="w", padx=25)
+    tk.Label(dialogo, text="Onde está o dispositivo?", font=(FONTE_INTERFACE, 15, "bold"), bg=cor("superficie"), fg=cor("texto")).pack(anchor="w", padx=25, pady=(23, 7))
+    tk.Label(dialogo, text="Escolha um cômodo ou digite outro nome.", font=(FONTE_INTERFACE, 10), bg=cor("superficie"), fg=cor("texto_fraco")).pack(anchor="w", padx=25)
     escolha = tk.StringVar(value=atual)
     entrada = ttk.Combobox(dialogo, textvariable=escolha, values=COMODOS_SUGESTOES, width=35)
     entrada.pack(fill="x", padx=25, pady=(14, 12), ipady=5)
@@ -335,22 +367,29 @@ def criar_botao(pai, texto, comando, estilo="normal", compacto=False):
         "suave": (cor("superficie_2"), cor("texto_fraco")),
     }
     fundo, frente = estilos.get(estilo, estilos["normal"])
-    botao = tk.Button(
-        pai,
-        text=texto,
-        command=comando,
+    parametros = dict(
         bg=fundo,
         fg=frente,
-        activebackground=cor("botao_hover"),
-        activeforeground=frente,
         relief="flat",
         bd=0,
         cursor="hand2",
-        font=("Segoe UI", 9 if compacto else 10, "bold"),
+        font=(FONTE_INTERFACE, 9 if compacto else 10, "bold"),
         padx=10 if compacto else 14,
         pady=6 if compacto else 9,
         highlightthickness=0,
     )
+    if MODO_MAC:
+        # No Aqua, Button pode ignorar as cores do tema. Label preserva cores e clique.
+        botao = tk.Label(pai, text=texto, takefocus=1, **parametros)
+        botao.bind("<Button-1>", lambda evento: comando())
+        botao.bind("<Return>", lambda evento: comando())
+        botao.bind("<space>", lambda evento: comando())
+    else:
+        botao = tk.Button(
+            pai, text=texto, command=comando,
+            activebackground=cor("botao_hover"), activeforeground=frente,
+            **parametros,
+        )
     botao.bind("<Enter>", lambda evento: botao.configure(bg=cor("botao_hover")) if estilo in ("normal", "suave") else None)
     botao.bind("<Leave>", lambda evento: botao.configure(bg=fundo))
     return botao
@@ -362,7 +401,7 @@ def criar_rotulo(pai, texto, tamanho=10, peso="normal", cor_texto=None, fundo=No
         text=texto,
         bg=fundo or cor("superficie"),
         fg=cor_texto or cor("texto"),
-        font=fonte or ("Segoe UI", tamanho, peso),
+        font=fonte or (FONTE_INTERFACE, tamanho, peso),
         **kwargs,
     )
 
@@ -394,10 +433,10 @@ def adicionar_dispositivo():
     dialogo.configure(bg=cor("fundo"))
     dialogo.transient(janela)
     dialogo.grab_set()
-    tk.Label(dialogo, text="Novo dispositivo", font=("Segoe UI", 21, "bold"),
+    tk.Label(dialogo, text="Novo dispositivo", font=(FONTE_INTERFACE, 21, "bold"),
              fg=cor("texto"), bg=cor("fundo")).pack(anchor="w", padx=30, pady=(25, 4))
     tk.Label(dialogo, text="Personalize o dispositivo e escolha onde ele está na casa.",
-             font=("Segoe UI", 10), fg=cor("texto_fraco"), bg=cor("fundo")).pack(anchor="w", padx=30, pady=(0, 18))
+             font=(FONTE_INTERFACE, 10), fg=cor("texto_fraco"), bg=cor("fundo")).pack(anchor="w", padx=30, pady=(0, 18))
     formulario = criar_cartao(dialogo, 20)
     formulario.pack(fill="both", expand=True, padx=26, pady=(0, 10))
 
@@ -415,7 +454,7 @@ def adicionar_dispositivo():
         if combo is None:
             entrada = tk.Entry(bloco, textvariable=variavel, show=esconder or "", relief="flat",
                               bg=cor("entrada"), fg=cor("texto"), insertbackground=cor("texto"),
-                              font=("Segoe UI", 11), bd=0)
+                              font=(FONTE_INTERFACE, 11), bd=0)
         else:
             entrada = ttk.Combobox(bloco, textvariable=variavel, values=combo, state="readonly" if texto.startswith("Tipo") else "normal")
         entrada.pack(fill="x", ipady=6)
@@ -446,7 +485,7 @@ def adicionar_dispositivo():
         bloco = tk.Frame(extras, bg=cor("superficie"))
         criar_rotulo(bloco, titulo, 9, "bold", cor("texto_fraco")).pack(anchor="w", pady=(0, 5))
         tk.Entry(bloco, textvariable=valores[nome], show=esconder, relief="flat", bd=0,
-                 font=("Segoe UI", 11), bg=cor("entrada"), fg=cor("texto"),
+                 font=(FONTE_INTERFACE, 11), bg=cor("entrada"), fg=cor("texto"),
                  insertbackground=cor("texto")).pack(fill="x", ipady=5)
         bloco.pack(fill="x", pady=(0, 12))
 
@@ -762,7 +801,7 @@ def escolher_dispositivo_alvo(excluir_id=None, tipo=None):
     dialogo.resizable(False, False)
     tk.Label(
         dialogo, text="Qual dispositivo deseja controlar?", bg=cor("fundo"),
-        fg=cor("texto"), font=("Segoe UI", 12, "bold"), padx=18, pady=14,
+        fg=cor("texto"), font=(FONTE_INTERFACE, 12, "bold"), padx=18, pady=14,
     ).pack(anchor="w")
     opcoes = [f"{id_disp} - {disp.get_nome().title()} ({nome_tipo(disp)})" for id_disp, disp in dispositivos]
     selecionado = tk.StringVar(value=opcoes[0])
@@ -1309,6 +1348,21 @@ def navegar_para(chave, local=None):
 
 
 def criar_hero(pai, dispositivos, ligados, conectados):
+    # --------------- Painel principal com visual adaptado ao Mac -----------
+    if MODO_MAC:
+        # Fundo sólido evita falhas com stipple/camadas do Canvas no Aqua antigo.
+        painel = tk.Frame(pai, height=218, bg="#155A9D", padx=29, pady=22)
+        painel.pack(fill="x", pady=(4, 5))
+        painel.pack_propagate(False)
+        tk.Label(painel, text="CASA INTELIGENTE  /  PAINEL PRINCIPAL", bg="#155A9D", fg="#D8EDFF",
+                 font=(FONTE_INTERFACE, 9, "bold")).pack(anchor="w")
+        tk.Label(painel, text="Sua casa, do seu jeito.", bg="#155A9D", fg="#FFFFFF",
+                 font=(FONTE_INTERFACE, 24, "bold")).pack(anchor="w", pady=(13, 2))
+        tk.Label(painel, text="Veja o que está acontecendo e acesse seus ambientes.",
+                 bg="#155A9D", fg="#EDF7FF", font=(FONTE_INTERFACE, 10)).pack(anchor="w")
+        tk.Label(painel, text=f"{len(dispositivos)} dispositivos    •    {ligados} ligados    •    {conectados} no Wi-Fi",
+                 bg="#155A9D", fg="#FFFFFF", font=(FONTE_INTERFACE, 11, "bold")).pack(anchor="w", pady=(20, 0))
+        return painel
     # --------------- Gradiente inspirado no painel de casa inteligente -----------
     painel = tk.Canvas(pai, height=218, bg="#0C559A", bd=0, highlightthickness=0)
     painel.pack(fill="x", pady=(4, 5))
@@ -1334,13 +1388,13 @@ def criar_hero(pai, dispositivos, ligados, conectados):
         painel.create_oval(largura-160, -65, largura+88, 180, fill="#9FD5F9", outline="", stipple="gray25")
         painel.create_oval(largura-20, 65, largura+175, 255, fill="#FFC184", outline="", stipple="gray25")
         painel.create_text(30, 27, text="CASA INTELIGENTE  /  PAINEL PRINCIPAL", anchor="nw",
-                          fill="#D8EDFF", font=("Segoe UI", 9, "bold"))
+                          fill="#D8EDFF", font=(FONTE_INTERFACE, 9, "bold"))
         painel.create_text(29, 64, text="Sua casa, do seu jeito.", anchor="nw",
-                          fill="white", font=("Segoe UI", 25, "bold"))
+                          fill="white", font=(FONTE_INTERFACE, 25, "bold"))
         painel.create_text(31, 112, text="Veja o que está acontecendo e acesse seus ambientes.", anchor="nw",
-                          fill="#EDF7FF", font=("Segoe UI", 10))
+                          fill="#EDF7FF", font=(FONTE_INTERFACE, 10))
         painel.create_text(32, 170, text=f"{len(dispositivos)} dispositivos       •       {ligados} ligados       •       {conectados} no Wi-Fi",
-                          anchor="nw", fill="white", font=("Segoe UI", 11, "bold"))
+                          anchor="nw", fill="white", font=(FONTE_INTERFACE, 11, "bold"))
     painel.bind("<Configure>", desenhar)
     return painel
 
@@ -1368,7 +1422,7 @@ def criar_atalho_categoria(pai, chave, indice):
     bolha.pack(side="left")
     bolha.pack_propagate(False)
     criar_rotulo(bolha, simbolo, 22, "bold", cor(destaque), fundo_icone(destaque),
-                 fonte=("Segoe UI Symbol", 22, "bold")).pack(expand=True)
+                 fonte=(FONTE_SIMBOLOS, 22, "bold")).pack(expand=True)
     infos = tk.Frame(topo, bg=cor("superficie"))
     infos.pack(side="left", padx=13, fill="x", expand=True)
     criar_rotulo(infos, titulo, 13, "bold").pack(anchor="w")
@@ -1383,7 +1437,7 @@ def criar_atalho_comodo(pai, local, indice):
     ligados = sum(d.is_ligado() for _, d in itens)
     cartao = criar_cartao(pai, 16)
     cartao.grid(row=indice // 3, column=indice % 3, padx=(0, 10) if indice % 3 < 2 else 0, pady=7, sticky="nsew")
-    criar_rotulo(cartao, "⌂", 22, "bold", cor("azul"), fonte=("Segoe UI Symbol", 22, "bold")).pack(anchor="w")
+    criar_rotulo(cartao, "⌂", 22, "bold", cor("azul"), fonte=(FONTE_SIMBOLOS, 22, "bold")).pack(anchor="w")
     criar_rotulo(cartao, local, 12, "bold").pack(anchor="w", pady=(6, 0))
     criar_rotulo(cartao, f"{len(itens)} dispositivos  •  {ligados} ligados", 9,
                  cor_texto=cor("texto_fraco")).pack(anchor="w", pady=(4, 12))
@@ -1429,7 +1483,7 @@ def criar_cartao_dispositivo(pai, id_disp, dispositivo):
     bloco_icone.pack(side="left")
     bloco_icone.pack_propagate(False)
     criar_rotulo(bloco_icone, simbolo, 22, "bold", cor(destaque), fundo_icone(destaque),
-                 fonte=("Segoe UI Symbol", 22, "bold")).pack(expand=True)
+                 fonte=(FONTE_SIMBOLOS, 22, "bold")).pack(expand=True)
     bloco_nome = tk.Frame(linha, bg=cor("superficie"))
     bloco_nome.pack(side="left", padx=(11, 0), fill="both", expand=True)
     criar_rotulo(bloco_nome, titulo, 12, "bold", anchor="w", wraplength=210, justify="left").pack(anchor="w")
@@ -1473,7 +1527,7 @@ def criar_cartao_dispositivo(pai, id_disp, dispositivo):
                                      ("Azul", "#67B7FF"), ("Vermelha", "#F4707C"), ("Verde", "#4CD2A0")]:
             tk.Button(linha_cores, text="●", bg=cor("superficie"), fg=cor_visual,
                       activebackground=cor("superficie"), bd=0, cursor="hand2",
-                      font=("Segoe UI", 20, "bold"), relief="flat", highlightthickness=0,
+                      font=(FONTE_INTERFACE, 20, "bold"), relief="flat", highlightthickness=0,
                       command=lambda i=id_disp, c=cor_nome: mudar_cor_lampada(i, c)).pack(side="left", padx=(0, 7))
 
     # --------------- Ar-condicionado: ajuste de temperatura e temporizador -----------
@@ -1563,7 +1617,7 @@ def criar_area_sensores(pai, dispositivos):
             linha = tk.Frame(cartao, bg=cor("superficie"))
             linha.pack(fill="x", pady=5)
             icone, cor_icone = obter_icone(dispositivo)
-            criar_rotulo(linha, icone, 15, "bold", cor(cor_icone), fonte=("Segoe UI Symbol", 15, "bold")).pack(side="left", padx=(0, 8))
+            criar_rotulo(linha, icone, 15, "bold", cor(cor_icone), fonte=(FONTE_SIMBOLOS, 15, "bold")).pack(side="left", padx=(0, 8))
             bloco = tk.Frame(linha, bg=cor("superficie"))
             bloco.pack(side="left", fill="x", expand=True)
             criar_rotulo(bloco, dispositivo.get_nome().title(), 9, "bold").pack(anchor="w")
@@ -1735,7 +1789,7 @@ def montar_interface():
     marca_icone.pack(side="left")
     marca_icone.pack_propagate(False)
     criar_rotulo(marca_icone, "⌂", 26, "bold", cor("azul"), fundo_icone("azul"),
-                 fonte=("Segoe UI Symbol", 26, "bold")).pack(expand=True)
+                 fonte=(FONTE_SIMBOLOS, 26, "bold")).pack(expand=True)
     nome = tk.Frame(bloco_marca, bg=cor("lateral"))
     nome.pack(side="left", padx=10)
     criar_rotulo(nome, "CASA", 13, "bold", cor("texto"), cor("lateral")).pack(anchor="w")
@@ -1744,14 +1798,20 @@ def montar_interface():
 
     def botao_menu(titulo, simbolo, chave, destaque):
         ativo = pagina_atual == chave
-        botao = tk.Button(lateral, text=f"{simbolo}    {titulo}", anchor="w",
-                          font=("Segoe UI", 10, "bold" if ativo else "normal"),
+        parametros = dict(text=f"{simbolo}    {titulo}", anchor="w",
+                          font=(FONTE_INTERFACE, 10, "bold" if ativo else "normal"),
                           bg=cor("superficie_2") if ativo else cor("lateral"),
                           fg=cor(destaque) if ativo else cor("texto_fraco"),
-                          activebackground=cor("superficie_2"), activeforeground=cor("texto"),
                           relief="flat", bd=0, highlightthickness=0,
-                          padx=13, pady=11, cursor="hand2",
-                          command=lambda: navegar_para(chave))
+                          padx=13, pady=11, cursor="hand2")
+        if MODO_MAC:
+            botao = tk.Label(lateral, takefocus=1, **parametros)
+            botao.bind("<Button-1>", lambda evento, chave=chave: navegar_para(chave))
+            botao.bind("<Return>", lambda evento, chave=chave: navegar_para(chave))
+        else:
+            botao = tk.Button(lateral, command=lambda chave=chave: navegar_para(chave),
+                              activebackground=cor("superficie_2"), activeforeground=cor("texto"),
+                              **parametros)
         botao.pack(fill="x", pady=3)
         menu_botoes[chave] = botao
 
@@ -1787,22 +1847,38 @@ def montar_interface():
     barra_rolagem.pack(side="right", fill="y")
     canvas_painel.pack(side="left", fill="both", expand=True)
     painel_scroll = tk.Frame(canvas_painel, bg=cor("fundo"))
-    janela_canvas = canvas_painel.create_window((0, 0), window=painel_scroll, anchor="nw")
+    janela_canvas = canvas_painel.create_window((0, 0), window=painel_scroll, anchor="nw", width=900)
     painel_scroll.bind("<Configure>", lambda evento: canvas_painel.configure(scrollregion=canvas_painel.bbox("all")))
     canvas_painel.bind("<Configure>", lambda evento: canvas_painel.itemconfigure(janela_canvas, width=evento.width))
     canvas_painel.bind_all("<MouseWheel>", lambda evento: canvas_painel.yview_scroll(-1 if evento.delta > 0 else 1, "units"))
 
     status_bar = tk.Label(principal, text="Sistema pronto.", anchor="w", bg=cor("lateral"), fg=cor("texto_fraco"),
-                          font=("Segoe UI", 9), padx=22, pady=8)
+                          font=(FONTE_INTERFACE, 9), padx=22, pady=8)
     status_bar.pack(fill="x", side="bottom")
     renderizar_painel()
+
+    if MODO_MAC:
+        # Corrige o tamanho da área rolável após a janela aparecer na tela.
+        def ajustar_canvas_mac():
+            if not canvas_painel.winfo_exists():
+                return
+            canvas_painel.update_idletasks()
+            largura = max(canvas_painel.winfo_width(), 400)
+            canvas_painel.itemconfigure(janela_canvas, width=largura)
+            painel_scroll.update_idletasks()
+            canvas_painel.configure(scrollregion=canvas_painel.bbox("all"))
+            canvas_painel.yview_moveto(0)
+        janela.after(200, ajustar_canvas_mac)
 
 
 reparar_wifi_antigo()
 locais_dispositivos = carregar_comodos()
 historico_atividades = carregar_historico()
-montar_interface()
+try:
+    montar_interface()
+except Exception as erro:
+    registrar_erro_interface(type(erro), erro, erro.__traceback__)
+    raise
 janela.after(120, processar_eventos_voz)
 janela.protocol("WM_DELETE_WINDOW", fechar_interface)
-janela.update()
 janela.mainloop()
