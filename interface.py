@@ -1,3 +1,6 @@
+Here is the complete, fully cleaned-up version of `interface.py` with all the Mac compatibility fixes and non-breaking spaces removed so it won't throw any indentation errors:
+
+```python
 import os
 import json
 import queue
@@ -147,7 +150,6 @@ def cor(nome):
 def normalizar_texto(texto):
     texto = unicodedata.normalize("NFD", str(texto).lower())
     return "".join(letra for letra in texto if unicodedata.category(letra) != "Mn")
-
 
 
 # --------------- Cômodos e identificação dos dispositivos -----------
@@ -453,8 +455,8 @@ def adicionar_dispositivo():
         criar_rotulo(bloco, texto, 9, "bold", cor("texto_fraco")).pack(anchor="w", pady=(0, 5))
         if combo is None:
             entrada = tk.Entry(bloco, textvariable=variavel, show=esconder or "", relief="flat",
-                              bg=cor("entrada"), fg=cor("texto"), insertbackground=cor("texto"),
-                              font=(FONTE_INTERFACE, 11), bd=0)
+                               bg=cor("entrada"), fg=cor("texto"), insertbackground=cor("texto"),
+                               font=(FONTE_INTERFACE, 11), bd=0)
         else:
             entrada = ttk.Combobox(bloco, textvariable=variavel, values=combo, state="readonly" if texto.startswith("Tipo") else "normal")
         entrada.pack(fill="x", ipady=6)
@@ -997,7 +999,6 @@ def resolver_alvos_comando(comando, id_asst, acao):
     return [], False
 
 
-
 def executar_comando_assistente(id_asst, comando, origem="texto", mostrar_confirmacao=True):
     try:
         assistente = casa.get_dispositivo(id_asst)
@@ -1292,7 +1293,6 @@ def fechar_interface():
     janela.destroy()
 
 
-
 # --------------- Páginas, cores e cartões do painel -----------
 CATEGORIAS = {
     "lampadas": ("Iluminação", "✦", "amarelo", "Controle as lâmpadas e personalize as cores."),
@@ -1388,13 +1388,13 @@ def criar_hero(pai, dispositivos, ligados, conectados):
         painel.create_oval(largura-160, -65, largura+88, 180, fill="#9FD5F9", outline="", stipple="gray25")
         painel.create_oval(largura-20, 65, largura+175, 255, fill="#FFC184", outline="", stipple="gray25")
         painel.create_text(30, 27, text="CASA INTELIGENTE  /  PAINEL PRINCIPAL", anchor="nw",
-                          fill="#D8EDFF", font=(FONTE_INTERFACE, 9, "bold"))
+                           fill="#D8EDFF", font=(FONTE_INTERFACE, 9, "bold"))
         painel.create_text(29, 64, text="Sua casa, do seu jeito.", anchor="nw",
-                          fill="white", font=(FONTE_INTERFACE, 25, "bold"))
+                           fill="white", font=(FONTE_INTERFACE, 25, "bold"))
         painel.create_text(31, 112, text="Veja o que está acontecendo e acesse seus ambientes.", anchor="nw",
-                          fill="#EDF7FF", font=(FONTE_INTERFACE, 10))
-        painel.create_text(32, 170, text=f"{len(dispositivos)} dispositivos       •       {ligados} ligados       •       {conectados} no Wi-Fi",
-                          anchor="nw", fill="white", font=(FONTE_INTERFACE, 11, "bold"))
+                           fill="#EDF7FF", font=(FONTE_INTERFACE, 10))
+        painel.create_text(32, 170, text=f"{len(dispositivos)} dispositivos      •      {ligados} ligados      •      {conectados} no Wi-Fi",
+                           anchor="nw", fill="white", font=(FONTE_INTERFACE, 11, "bold"))
     painel.bind("<Configure>", desenhar)
     return painel
 
@@ -1833,7 +1833,7 @@ def montar_interface():
     barra_topo = tk.Frame(principal, bg=cor("fundo"), padx=26, pady=15)
     barra_topo.pack(fill="x")
     label_caminho = criar_rotulo(barra_topo, "Meu lar  /  " + (CATEGORIAS[pagina_atual][0] if pagina_atual in CATEGORIAS else "Visão geral" if pagina_atual == "inicio" else "Atividades" if pagina_atual == "atividade" else comodo_ativo or "Cômodos"),
-                                10, "bold", cor("texto_fraco"), cor("fundo"))
+                                 10, "bold", cor("texto_fraco"), cor("fundo"))
     label_caminho.pack(side="left", padx=(0, 8))
     criar_botao(barra_topo, "☀ Modo claro" if tema_atual == "escuro" else "☾ Modo escuro",
                 alternar_tema, "suave", True).pack(side="right", padx=(9, 0))
