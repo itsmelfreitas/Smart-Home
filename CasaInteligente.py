@@ -221,3 +221,5 @@ class CasaInteligente:
 
     def get_dispositivo(self, id_disp: int):
         if id_disp in self.__dispositivos:
+            return self.__dispositivos[id_disp]
+        raise Exception("Erro: Dispositivo não encontrado no sistema!")
