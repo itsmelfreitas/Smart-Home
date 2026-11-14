@@ -1,0 +1,9 @@
+14/11/2026 00:35:47 | Dispositivo 'Alexa' adicionado com sucesso! (ID interno: 3)
+14/11/2026 00:36:00 | Alexa ligado com sucesso!
+14/11/2026 00:46:41 | lampada sala ligado com sucesso!
+14/11/2026 00:46:41 | ar do quarto ligado com sucesso!
+14/11/2026 00:46:41 | Alexa: 2 dispositivo(s) ligados; 1 já estavam no estado solicitado.
+14/11/2026 00:46:57 | lampada sala desligado com sucesso!
+14/11/2026 00:46:57 | ar do quarto desligado com sucesso!
+14/11/2026 00:46:57 | Alexa desligado com sucesso!
+14/11/2026 00:46:57 | Alexa: 3 dispositivo(s) desligados; 0 já estavam no estado solicitado.

@@ -1,0 +1,5 @@
+Para usar a nova interface e necessario instalar essas dependencias no bash pyton da interface.py 
+
+python -m pip install customtkinter SpeechRecognition PyAudioWPatch
+
+so rodar esse comando no bash
